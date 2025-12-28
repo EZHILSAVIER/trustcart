@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 font-sans antialiased;
+  }
+
+  /* Improve visibility of all headings */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply text-slate-950 font-bold tracking-tight;
+  }
+
+  /* Make muted text slightly darker too */
+  .text-slate-500 {
+    @apply text-slate-600;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-[#2563eb] hover:bg-blue-700 text-white font-bold py-2.5 px-5 rounded-lg shadow-md transition-all active:scale-95;
+  }
+}
+
+@layer utilities {
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0% {
+      transform: translateY(0px);
+    }
+
+    50% {
+      transform: translateY(-20px);
+    }
+
+    100% {
+      transform: translateY(0px);
+    }
+  }
+}
