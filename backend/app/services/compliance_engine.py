@@ -6,17 +6,90 @@ from app.ai.nlp_engine import nlp_engine
 
 # Rule Catalog
 RULES_CATALOG = {
-    "MRP_REQUIRED": {"severity": "high", "weight": 15, "description": "MRP is mandatory but missing"},
-    "FAKE_DISCOUNT": {"severity": "high", "weight": 20, "description": "Discount exceeds 80% or is suspicious"},
-    "PRICE_HIGHER_THAN_MRP": {"severity": "high", "weight": 25, "description": "Selling Price > MRP"},
-    "RESTRICTED_KEYWORD": {"severity": "high", "weight": 30, "description": "Product contains restricted/prohibited terms"},
-    "BRAND_INFRINGEMENT": {"severity": "high", "weight": 40, "description": "Potential counterfeit of protected brand"},
-    "MISSING_IMAGE": {"severity": "medium", "weight": 10, "description": "Product image is missing"},
-    "WATERMARK_DETECTED": {"severity": "low", "weight": 5, "description": "Image contains watermark/text overlay"},
-    "MANDATORY_FIELD_MISSING": {"severity": "medium", "weight": 10, "description": "Category-specific mandatory field missing"},
-    "TITLE_TOO_SHORT": {"severity": "low", "weight": 5, "description": "Title is too short (< 10 words)"},
-    "TITLE_ALL_CAPS": {"severity": "low", "weight": 5, "description": "Title is in ALL CAPS"},
-    "INAPPROPRIATE_CONTENT": {"severity": "high", "weight": 50, "description": "Inappropriate/NSFW content detected in image"},
+    "MRP_REQUIRED": {
+        "severity": "high", 
+        "weight": 15, 
+        "description": "MRP is mandatory but missing",
+        "regulation": {"act": "Legal Metrology Act, 2009", "section": "Rule 6(1)"},
+        "fix": "Ensure the 'mrp' field is present and greater than 0."
+    },
+    "FAKE_DISCOUNT": {
+        "severity": "high", 
+        "weight": 20, 
+        "description": "Discount exceeds 80% or is suspicious",
+        "regulation": {"act": "Consumer Protection (E-Commerce) Rules, 2020", "section": "Rule 4(2)"},
+        "fix": "Reduce the discount percentage to under 80% or justify the pricing."
+    },
+    "PRICE_HIGHER_THAN_MRP": {
+        "severity": "high", 
+        "weight": 25, 
+        "description": "Selling Price > MRP",
+        "regulation": {"act": "Legal Metrology Act, 2009", "section": "Section 18"},
+        "fix": "Selling price cannot exceed the Maximum Retail Price (MRP)."
+    },
+    "RESTRICTED_KEYWORD": {
+        "severity": "high", 
+        "weight": 30, 
+        "description": "Product contains restricted/prohibited terms",
+        "regulation": {"act": "Consumer Protection Act, 2019", "section": "Section 2(9)"},
+        "fix": "Remove the prohibited term from the title or description."
+    },
+    "BRAND_INFRINGEMENT": {
+        "severity": "high", 
+        "weight": 40, 
+        "description": "Potential counterfeit of protected brand",
+        "regulation": {"act": "Trade Marks Act, 1999", "section": "Section 29"},
+        "fix": "Ensure you have authorization to use this brand name or remove it."
+    },
+    "MISSING_IMAGE": {
+        "severity": "medium", 
+        "weight": 10, 
+        "description": "Product image is missing",
+        "regulation": {"act": "E-Commerce Guidelines", "section": "Visuals"},
+        "fix": "Upload at least one clear image of the product."
+    },
+    "WATERMARK_DETECTED": {
+        "severity": "low", 
+        "weight": 5, 
+        "description": "Image contains watermark/text overlay",
+        "regulation": {"act": "Platform Policy", "section": "Image Guidelines"},
+        "fix": "Use a clean product image without text overlays or watermarks."
+    },
+    "MANDATORY_FIELD_MISSING": {
+        "severity": "medium", 
+        "weight": 10, 
+        "description": "Category-specific mandatory field missing",
+        "regulation": {"act": "Consumer Protection (E-Commerce) Rules, 2020", "section": "Rule 5"},
+        "fix": "Fill in the missing mandatory attributes for this category."
+    },
+    "TITLE_TOO_SHORT": {
+        "severity": "low", 
+        "weight": 5, 
+        "description": "Title is too short (< 10 words)",
+        "regulation": {"act": "Platform Policy", "section": "Quality"},
+        "fix": "Expand the title to be more descriptive (min 3 words)."
+    },
+    "TITLE_ALL_CAPS": {
+        "severity": "low", 
+        "weight": 5, 
+        "description": "Title is in ALL CAPS",
+        "regulation": {"act": "Platform Policy", "section": "Quality"},
+        "fix": "Use Title Case instead of ALL CAPS."
+    },
+    "INAPPROPRIATE_CONTENT": {
+        "severity": "high", 
+        "weight": 50, 
+        "description": "Inappropriate/NSFW content detected in image",
+        "regulation": {"act": "IT Act, 2000", "section": "Section 67"},
+        "fix": "Remove the inappropriate content immediately."
+    },
+    "IMAGE_MISMATCH": {
+        "severity": "high", 
+        "weight": 40, 
+        "description": "Product image does not match product title/description",
+        "regulation": {"act": "Consumer Protection (E-Commerce) Rules, 2020", "section": "Rule 4(2)"},
+        "fix": "Upload an image that accurately represents the product."
+    },
 }
 
 class ComplianceEngine:
@@ -38,13 +111,24 @@ class ComplianceEngine:
             "clothing": ["material", "size_chart", "mrp"]
         }
 
-    def _create_violation(self, rule_key: str, specific_desc: str = None, evidence: str = None) -> ViolationSchema:
-        rule_def = RULES_CATALOG.get(rule_key, {"severity": "low", "weight": 0, "description": "Unknown Violation"})
+    def _create_violation(self, rule_key: str, specific_desc: str = None, evidence: str = None, confidence: float = 1.0) -> ViolationSchema:
+        rule_def = RULES_CATALOG.get(rule_key, {"severity": "low", "weight": 0, "description": "Unknown Violation", "regulation": None, "fix": None})
+        
+        # Calculate Impact Score (Weight * Confidence * Multiplier)
+        # Scale: Weight (0-50) * Confidence (0-1) -> Impact (0-100)
+        # We'll normalize max weight (50) to 100 roughly.
+        impact = int(rule_def["weight"] * confidence * 2) 
+
         return ViolationSchema(
             type=rule_key,
             severity=rule_def["severity"],
             description=specific_desc or rule_def["description"],
-            evidence=evidence or "Rule check failed"
+            evidence=evidence or "Rule check failed",
+            confidence=confidence,
+            impact_score=impact,
+            status="Open",
+            regulation_mapping=rule_def.get("regulation"),
+            suggested_fix=rule_def.get("fix")
         )
 
     def check_pricing_compliance(self, product_data: Dict[str, Any]) -> List[ViolationSchema]:
@@ -96,7 +180,11 @@ class ComplianceEngine:
              # Basic check using image_engine (mock/real)
              # Use first image for analysis
              target_url = image_url if image_url else images[0]
-             img_analysis = image_engine.analyze_image(target_url, product_data.get("category", "general"))
+             img_analysis = image_engine.analyze_image(
+                 target_url, 
+                 product_title=product_data.get("title", ""), 
+                 expected_category=product_data.get("category", "general")
+             )
              
              if img_analysis["has_watermark"]:
                   violations.append(self._create_violation(
@@ -107,6 +195,12 @@ class ComplianceEngine:
              if img_analysis.get("inappropriate_detected"):
                   violations.append(self._create_violation(
                       "INAPPROPRIATE_CONTENT",
+                      evidence=img_analysis["details"]
+                  ))
+
+             if img_analysis.get("cv_match") is False:
+                  violations.append(self._create_violation(
+                      "IMAGE_MISMATCH",
                       evidence=img_analysis["details"]
                   ))
 
@@ -183,21 +277,35 @@ class ComplianceEngine:
         violations.extend(self.check_image_compliance(product_data))
         violations.extend(self.check_formatting_rules(product_data))
 
-        # 2. AI Analysis Integration (NLP)
+        # 2. AI Analysis Integration (Gemini AI)
         nlp_results = nlp_engine.analyze(full_text)
         
-        # NLP: Misleading Claims
+        # AI: Misleading Claims
         for term in nlp_results.get("misleading_terms", []):
              violations.append(self._create_violation(
                  "RESTRICTED_KEYWORD",
-                 specific_desc=f"Misleading claim detected: '{term}'",
-                 evidence=f"Found '{term}' in text analysis"
+                 specific_desc=f"AI detected misleading claim: '{term}'",
+                 evidence=f"AI Reasoning: {nlp_results.get('reasoning', 'Term found in text')}",
+                 confidence=0.95
              ))
 
-        # NLP: Missing Fields (Cross-reference with structured check)
-        # If NLP extraction also fails to find them, it reinforces confidence in 'MISSING_FIELD'
-        # For now, we rely on the structured check (check_mandatory_fields), 
-        # but we could use NLP to "save" a violation if extraction finds it in description.
+        # AI: Prohibited Content
+        if nlp_results.get("prohibited_content"):
+             violations.append(self._create_violation(
+                 "INAPPROPRIATE_CONTENT",
+                 specific_desc="AI detected prohibited/unsafe content",
+                 evidence=f"AI Reasoning: {nlp_results.get('reasoning', '')}",
+                 confidence=0.98
+             ))
+
+        # AI: Suspicious Pricing
+        if nlp_results.get("suspicious_pricing"):
+             violations.append(self._create_violation(
+                 "FAKE_DISCOUNT",
+                 specific_desc="AI flagged pricing as suspicious/fake",
+                 evidence=f"AI Reasoning: {nlp_results.get('reasoning', '')}",
+                 confidence=0.90
+             ))
         
         # 3. Calculate Score
         score = 100

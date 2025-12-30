@@ -40,4 +40,24 @@ export const fetchReports = async (params) => {
     }
 };
 
+export const fetchViolationStats = async () => {
+    try {
+        const response = await api.get("/violations/stats");
+        return response.data;
+    } catch (error) {
+        console.error("Fetch Violation Stats Error:", error);
+        return null;
+    }
+};
+
+export const fetchViolations = async (params) => {
+    try {
+        const response = await api.get("/violations", { params });
+        return response.data;
+    } catch (error) {
+        console.error("Fetch Violations Error:", error);
+        return [];
+    }
+};
+
 export default api;

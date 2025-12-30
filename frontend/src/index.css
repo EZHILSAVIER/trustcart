@@ -1,8 +1,55 @@
 @import "tailwindcss";
 
 @layer base {
+
+  /* TRUSTCART DESIGN SYSTEM */
+  :root {
+    --color-primary: #0F172A;
+    /* Slate 900 */
+    --color-brand: #0369A1;
+    /* Sky 700 */
+    --color-secondary: #64748B;
+    /* Slate 500 */
+    --color-accent: #0F172A;
+    --color-success: #15803D;
+    /* Green 700 */
+    --color-warning: #B45309;
+    /* Amber 700 */
+    --color-danger: #B91C1C;
+    /* Red 700 */
+    --color-background: #F8FAFC;
+    /* Slate 50 */
+    --color-surface: #FFFFFF;
+    --color-border: #E2E8F0;
+    /* Slate 200 */
+  }
+
+  .dark {
+    --color-primary: #F8FAFC;
+    /* Slate 50 */
+    --color-brand: #38BDF8;
+    /* Sky 400 */
+    --color-secondary: #94A3B8;
+    /* Slate 400 */
+    --color-accent: #F8FAFC;
+    --color-success: #4ADE80;
+    /* Green 400 */
+    --color-warning: #FBBF24;
+    /* Amber 400 */
+    --color-danger: #F87171;
+    /* Red 400 */
+    --color-background: #0B1120;
+    /* Dark Navy */
+    --color-surface: #1E293B;
+    /* Slate 800 */
+    --color-border: #334155;
+    /* Slate 700 */
+  }
+
   body {
-    @apply bg-slate-50 text-slate-900 font-sans antialiased;
+    background-color: var(--color-background);
+    color: var(--color-primary);
+    @apply font-sans antialiased transition-colors duration-300;
   }
 
   /* Improve visibility of all headings */

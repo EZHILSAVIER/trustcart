@@ -37,7 +37,7 @@ const Login = () => {
                 <div className="relative z-10">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/50 border border-blue-400 text-sm font-semibold mb-6">
                         <ShieldCheck size={16} />
-                        <span>E-Compliance Monitor</span>
+                        <span>Trustcart</span>
                     </div>
                     <h1 className="text-5xl font-bold leading-tight mb-6">
                         Secure your platform<br />with AI-powered trust.

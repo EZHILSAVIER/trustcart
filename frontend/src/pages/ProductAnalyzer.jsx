@@ -28,8 +28,10 @@ const ProductAnalyzer = () => {
                 productSummary: {
                     name: data.name,
                     price: data.price,
+                    price: data.price,
                     seller: data.seller || "Analysis Result"
-                }
+                },
+                deals: data.deals
             });
 
         } catch (err) {

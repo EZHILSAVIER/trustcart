@@ -7,11 +7,19 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: "#2563eb", // Vibrant Blue (blue-600) for high visibility
-        secondary: "#475569", // slate-600
-        accent: "#0f172a", // slate-900
+        primary: "var(--color-primary)",
+        brand: "var(--color-brand)",
+        secondary: "var(--color-secondary)",
+        accent: "var(--color-accent)",
+        success: "var(--color-success)",
+        warning: "var(--color-warning)",
+        danger: "var(--color-danger)",
+        background: "var(--color-background)",
+        surface: "var(--color-surface)",
+        border: "var(--color-border)",
       }
     },
   },
+  darkMode: 'class',
   plugins: [],
 }

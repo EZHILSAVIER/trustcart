@@ -22,21 +22,30 @@ async def analyze_product(payload: Dict[str, Any] = Body(...)):
     if not url and not manual_data:
         raise HTTPException(status_code=400, detail="Please provide product URL or manual details")
 
-    # TODO: Helper function to scrape URL or parse manual data
-    product_name = "Sample Product"
-    product_description = ""
-    product_price = "₹0"
-    product_mrp = "₹0"
-    product_category = "general"
-    product_image_url = ""
-
+    from app.services.scraper_engine import scraper_engine
+    
+    # Scrape URL if provided
+    if url:
+        scraped_data = scraper_engine.scrape_url(url)
+        if not scraped_data or "error" in scraped_data:
+            error_msg = scraped_data.get("error", "Failed to scrape product data from URL")
+            raise HTTPException(status_code=400, detail=error_msg)
+        
+        product_name = scraped_data["title"]
+        product_description = scraped_data["description"]
+        product_price = scraped_data["price"]
+        product_mrp = scraped_data.get("mrp", "0")
+        product_category = scraped_data["category"]
+        product_image_url = scraped_data["image_url"]
+    
+    # Use Manual Data if provided (Fallback or Override)
     if manual_data:
-        product_name = manual_data.get("title", "Unknown Product")
-        product_description = manual_data.get("description", "")
-        product_price = manual_data.get("price", "0")
-        product_mrp = manual_data.get("mrp", "0")
-        product_category = manual_data.get("category", "general")
-        product_image_url = manual_data.get("image_url", "")
+        product_name = manual_data.get("title", product_name)
+        product_description = manual_data.get("description", product_description)
+        product_price = manual_data.get("price", product_price)
+        product_mrp = manual_data.get("mrp", product_mrp)
+        product_category = manual_data.get("category", product_category)
+        product_image_url = manual_data.get("image_url", product_image_url)
 
     # Run Compliance Engine
     analysis_input = {
@@ -52,6 +61,14 @@ async def analyze_product(payload: Dict[str, Any] = Body(...)):
     analysis_result = compliance_engine.evaluate_product(analysis_input)
     logging.info("DEBUG: Compliance Engine Finished.")
 
+    # Price Intelligence
+    try:
+        from app.services.price_intelligence import price_intelligence
+        deals = price_intelligence.find_deals(product_name, product_price)
+    except Exception as e:
+        logging.error(f"Price Intelligence Error: {e}")
+        deals = []
+
     result = ProductSchema(
         name=product_name,
         description=product_description,
@@ -62,7 +79,8 @@ async def analyze_product(payload: Dict[str, Any] = Body(...)):
         images=[product_image_url] if product_image_url else [],
         compliance_score=analysis_result["compliance_score"],
         risk_level=analysis_result["risk_level"],
-        violations=analysis_result["violations"]
+        violations=analysis_result["violations"],
+        deals=deals
     )
 
 

@@ -5,3 +5,11 @@ pydantic
 python-dotenv
 python-multipart
 openai
+numpy
+opencv-python
+requests
+google-generativeai
+beautifulsoup4
+lxml
+Pillow
+cloudscraper

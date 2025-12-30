@@ -11,12 +11,14 @@ import Signup from "./pages/auth/Signup";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 
+import Violations from "./pages/Violations";
+
 // Layout wrapper component
 const Layout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
 
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
+    <div className="flex min-h-screen bg-background font-sans text-primary transition-colors duration-300">
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div
@@ -50,7 +52,7 @@ function App() {
           <Route path="analyzer" element={<ProductAnalyzer />} />
           <Route path="reports" element={<Reports />} />
           <Route path="settings" element={<Settings />} />
-          <Route path="violations" element={<div className="p-4">Violations Page (Coming Soon)</div>} />
+          <Route path="violations" element={<Violations />} />
         </Route>
       </Routes>
     </Router>

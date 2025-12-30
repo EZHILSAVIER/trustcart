@@ -2,8 +2,23 @@ import cv2
 import numpy as np
 import requests
 from typing import Dict, Any, Optional
+import google.generativeai as genai
+import os
+import json
+from PIL import Image
+from io import BytesIO
+import logging
 
 class ImageEngine:
+    def __init__(self):
+        api_key = os.getenv("GEMINI_API_KEY")
+        if api_key:
+            genai.configure(api_key=api_key)
+            self.model = genai.GenerativeModel('gemini-2.5-flash')
+        else:
+            logging.warning("GEMINI_API_KEY not set. CV features disabled.")
+            self.model = None
+
     def download_image(self, url: str) -> Optional[np.ndarray]:
         try:
             resp = requests.get(url, timeout=5)
@@ -84,12 +99,58 @@ class ImageEngine:
             "predicted": "unknown"
         }
 
-    def analyze_image(self, url: str, expected_category: str = "general") -> Dict[str, Any]:
+    def verify_product_match_ai(self, image: np.ndarray, product_title: str) -> Dict[str, Any]:
+        """
+        Uses Gemini Vision to verify if the image semantically matches the product title.
+        """
+        if not self.model or not product_title:
+            return {"match": True, "confidence": 0.0, "reason": "AI not available or no title"}
+
+        try:
+            # Convert OpenCV (BGR) to PIL (RGB)
+            pixel_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            pil_image = Image.fromarray(pixel_rgb)
+
+            prompt = f"""
+            Analyze this product image.
+            Product Title: "{product_title}"
+
+            Does the image appear to be a valid representation of the product described in the title?
+            Check for:
+            1. Mismatch (e.g., Title says "iPhone", Image is a "Shoe")
+            2. Generic placeholder or "Image not found" icon.
+            3. Obvious wrong category.
+
+            Return JSON ONLY:
+            {{
+                "is_match": boolean,
+                "confidence": float (0.0 to 1.0),
+                "reason": "Short explanation"
+            }}
+            """
+            
+            response = self.model.generate_content([prompt, pil_image])
+            # Clean response
+            text = response.text.replace("```json", "").replace("```", "").strip()
+            data = json.loads(text)
+            
+            return {
+                "match": data.get("is_match", True),
+                "confidence": data.get("confidence", 0.0),
+                "reason": data.get("reason", "AI Verification")
+            }
+
+        except Exception as e:
+            logging.error(f"CV Analysis Error: {e}")
+            return {"match": True, "confidence": 0.0, "reason": "CV Error"}
+
+    def analyze_image(self, url: str, product_title: str = "", expected_category: str = "general") -> Dict[str, Any]:
         result = {
             "url_valid": False,
             "has_watermark": False,
             "inappropriate_detected": False,
             "category_match": True,
+            "cv_match": True,
             "details": ""
         }
         
@@ -111,6 +172,13 @@ class ImageEngine:
         if nsfw_res["inappropriate"]:
             result["inappropriate_detected"] = True
             result["details"] += f" {nsfw_res['details']}"
+
+        # 3. AI Product Match Verification
+        if product_title and self.model:
+            cv_res = self.verify_product_match_ai(image, product_title)
+            if not cv_res["match"]:
+                result["cv_match"] = False
+                result["details"] += f" [CV Mismatch: {cv_res['reason']}]"
 
         # 3. Category (Stub)
         cat_res = self.verify_category(image, expected_category)
